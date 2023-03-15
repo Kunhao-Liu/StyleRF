@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=$1 python train_style.py --config=configs/llff_style.txt

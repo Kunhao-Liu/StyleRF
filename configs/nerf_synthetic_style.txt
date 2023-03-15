@@ -1,0 +1,22 @@
+dataset_name = blender
+datadir = ./data/nerf_synthetic/lego
+ckpt = ./log_feature/lego/lego.th
+expname = lego
+basedir = ./log_style
+
+patch_size = 256
+chunk_size = 2048
+
+content_weight = 1
+style_weight = 20
+
+rm_weight_mask_thre = 0.01
+
+n_iters = 25000
+
+n_lamb_sigma = [16,16,16]
+n_lamb_sh = [48,48,48]
+N_voxel_init = 2097156 # 128**3
+N_voxel_final = 27000000 # 300**3
+
+fea2denseAct = softplus

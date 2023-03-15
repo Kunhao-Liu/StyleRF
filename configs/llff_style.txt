@@ -1,0 +1,28 @@
+dataset_name = llff
+datadir = ./data/nerf_llff_data/trex
+ckpt = ./log_feature/trex/trex.th
+expname = trex
+basedir = ./log_style
+
+nSamples = 300
+patch_size = 256
+chunk_size = 2048
+
+content_weight = 1
+style_weight = 20
+featuremap_tv_weight = 0
+image_tv_weight = 0
+
+rm_weight_mask_thre = 0.001
+
+downsample_train = 4.0
+ndc_ray = 1
+
+n_iters = 25000
+
+n_lamb_sigma = [16,4,4]
+n_lamb_sh = [48,12,12]
+N_voxel_init = 2097156 # 128**3
+N_voxel_final = 262144000 # 640**3
+
+fea2denseAct = relu
