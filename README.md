@@ -3,6 +3,8 @@
 
 This repository contains a pytorch implementation for the paper: [StyleRF: Zero-shot 3D Style Transfer of Neural Radiance Fields](TODO). StyleRF is an innovative 3D style transfer technique that achieves superior 3D stylization quality with precise geometry reconstruction and it can generalize to various new styles in a zero-shot manner. 
 
+![teaser](https://kunhao-liu.github.io/StyleRF/resources/teaser.png)
+
 ---
 ## Installation
 > Tested on Ubuntu 20.04 + Pytorch 1.12.1
