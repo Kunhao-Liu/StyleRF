@@ -1,7 +1,7 @@
 # [*CVPR 2023*] StyleRF: Zero-shot 3D Style Transfer of Neural Radiance Fields
-## [Project page](https://kunhao-liu.github.io/StyleRF/) |  [Paper](TODO)
+## [Project page](https://kunhao-liu.github.io/StyleRF/) |  [Paper](https://arxiv.org/abs/2303.10598)
 
-This repository contains a pytorch implementation for the paper: [StyleRF: Zero-shot 3D Style Transfer of Neural Radiance Fields](TODO). StyleRF is an innovative 3D style transfer technique that achieves superior 3D stylization quality with precise geometry reconstruction and it can generalize to various new styles in a zero-shot manner. 
+This repository contains a pytorch implementation for the paper: [StyleRF: Zero-shot 3D Style Transfer of Neural Radiance Fields](https://arxiv.org/abs/2303.10598). StyleRF is an innovative 3D style transfer technique that achieves superior 3D stylization quality with precise geometry reconstruction and it can generalize to various new styles in a zero-shot manner. 
 
 ![teaser](https://kunhao-liu.github.io/StyleRF/resources/teaser.png)
 
