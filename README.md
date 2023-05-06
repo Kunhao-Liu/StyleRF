@@ -40,6 +40,7 @@ To generate stylized novel views:
 ```
 bash scripts/test_style.sh [GPU ID]
 ```
+The rendered stylized images can then be found in the directory under the checkpoint's path.
 
 ## Training
 > Current settings in `configs` are tested on one NVIDIA RTX A5000 Graphics Card with 24G memory. To reduce memory consumption, you can set `batch_size`, `chunk_size` or `patch_size` to a smaller number.
