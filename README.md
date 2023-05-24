@@ -84,11 +84,12 @@ This repo is heavily based on the [TensoRF](https://github.com/apchenstu/TensoRF
 ## Citation
 If you find our code or paper helps, please consider citing:
 ```
-@InProceedings{liu2023stylerf,
-    author    = {Kunhao Liu and Fangneng Zhan and Yiwen Chen and Jiahui Zhang and Yingchen Yu and Abdulmotaleb El Saddik and Shijian Lu and Eric Xing}, 
-    title     = {StyleRF: Zero-shot 3D Style Transfer of Neural Radiance Fields},
-    booktitle = {Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)},
-    year      = {2023},
+@inproceedings{liu2023stylerf,
+  title={StyleRF: Zero-shot 3D Style Transfer of Neural Radiance Fields},
+  author={Liu, Kunhao and Zhan, Fangneng and Chen, Yiwen and Zhang, Jiahui and Yu, Yingchen and El Saddik, Abdulmotaleb and Lu, Shijian and Xing, Eric P},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={8338--8348},
+  year={2023}
 }
 ```
 
