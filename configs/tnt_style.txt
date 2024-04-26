@@ -1,21 +1,22 @@
-dataset_name = llff
-datadir = ./data/nerf_llff_data/trex
-ckpt = ./log_feature/trex/trex.th
-expname = trex
+dataset_name = tnt
+datadir = /mnt/sda/Datasets/tanks_temples_nerf++/tanks_and_temples/tat_intermediate_M60
+ckpt = log_feature/M60/M60.th
+expname = M60
 basedir = ./log_style
+wikiartdir = /mnt/sda/Datasets/wikiart
 
 nSamples = 300
 patch_size = 256
 chunk_size = 2048
 
 content_weight = 1
-style_weight = 20
+style_weight = 10
 featuremap_tv_weight = 0
 image_tv_weight = 0
 
 rm_weight_mask_thre = 0.001
 
-downsample_train = 4.0
+downsample_train = 1
 ndc_ray = 1
 
 n_iters = 25000

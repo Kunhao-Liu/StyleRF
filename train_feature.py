@@ -105,7 +105,7 @@ def reconstruction(args):
 
     # init dataset
     dataset = dataset_dict[args.dataset_name]
-    train_dataset = dataset(args.datadir, split='train', downsample=args.downsample_train, is_stack=True)
+    train_dataset = dataset(args.datadir, split='train', downsample=args.downsample_train, skip=2, is_stack=True)
     white_bg = train_dataset.white_bg
     near_far = train_dataset.near_far
     h_rays, w_rays = train_dataset.img_wh[1], train_dataset.img_wh[0]
@@ -164,8 +164,7 @@ def reconstruction(args):
 
     allrays, allfeatures = train_dataset.all_rays, train_dataset.all_features
     allrays_stack, allrgbs_stack = train_dataset.all_rays_stack, train_dataset.all_rgbs_stack
-    if not args.ndc_ray:
-        allrays, allfeatures = tensorf.filtering_rays(allrays, allfeatures, bbox_only=True)
+
     trainingSampler = SimpleSampler(allrays.shape[0], args.batch_size)
     frameSampler = iter(InfiniteSamplerWrapper(allrays_stack.size(0))) # every next(sampler) returns a frame index
 

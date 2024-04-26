@@ -5,6 +5,17 @@ from .sh import eval_sh_bases
 import numpy as np
 import time
 
+def contract(x):
+    """
+        Contracts points towards the origin (Eq 10 of arxiv.org/abs/2111.12077).
+        Args:
+            x: A tensor of shape [N, 3].   
+    """
+    eps = torch.tensor(1e-8)
+    # Clamping to eps prevents non-finite gradients when x == 0.
+    x_mag_sq = torch.maximum(eps, torch.sum(x**2, dim=-1, keepdim=True)) # [N, 1]
+    z = torch.where(x_mag_sq <= 1, x, ((2 * torch.sqrt(x_mag_sq) - 1) / x_mag_sq) * x) # [N, 3]
+    return z
 
 def positional_encoding(positions, freqs):
     
@@ -215,7 +226,20 @@ class TensorBase(torch.nn.Module):
         pass
     
     def normalize_coord(self, xyz_sampled):
-        return (xyz_sampled-self.aabb[0]) * self.invaabbSize - 1
+        '''
+        Input coordinates are in world space, we need to contract and normalize them.
+
+        normalize the coordinates to [-1, 1] to sample the volume
+        '''
+        # contract
+        xyz_contracted = contract(xyz_sampled)
+
+        # normalize
+        xyz_normalized = (
+            xyz_contracted - self.aabb.to(xyz_sampled.get_device())[0]
+        ) * self.invaabbSize.to(xyz_sampled.get_device()) - 1
+
+        return xyz_normalized
 
     def get_optparam_groups(self, lr_init_spatial = 0.02, lr_init_network = 0.001):
         pass
@@ -294,6 +318,39 @@ class TensorBase(torch.nn.Module):
 
         return rays_pts, interpx, ~mask_outbbox
 
+    def sample_ray_contracted(self, rays_o, rays_d, is_train=True, N_samples=-1):
+        '''
+        We do not perform contraction here
+        '''
+        N_samples = N_samples if N_samples > 0 else self.nSamples
+        near, far = self.near_far
+        inner_N_samples = N_samples - N_samples // 2
+        outer_N_samples = N_samples // 2
+        # inner
+        interpx_inner = (
+            torch.linspace(near, 2.0, inner_N_samples + 1).unsqueeze(0).to(rays_o)
+        )
+        if is_train:
+            interpx_inner[:, :-1] += (
+                torch.rand_like(interpx_inner).to(rays_o)
+                * ((2.0 - near) / inner_N_samples)
+            )[:, :-1]
+        interpx_inner = (interpx_inner[:, 1:] + interpx_inner[:, :-1]) * 0.5
+        # sample outer
+        rng = torch.arange(outer_N_samples + 1)[None].float()
+        if is_train:
+            rng[:, :-1] += (torch.rand_like(rng).to(rng))[:, :-1]
+        rng = torch.flip(rng, [1])
+        rng = (rng[:, 1:] + rng[:, :-1]) * 0.5
+        interpx_outer = 1.0 / (
+            1 / (far) + (1 / 2.0 - 1 / (far)) * rng / outer_N_samples
+        ).to(rays_o.device)
+        interpx = torch.cat((interpx_inner, interpx_outer), -1)
+
+        rays_pts = rays_o[..., None, :] + rays_d[..., None, :] * interpx[..., None]
+
+        mask_outbbox = torch.zeros_like(rays_pts[..., 0]) > 0 # every ray is valid
+        return rays_pts, interpx, ~mask_outbbox
 
     def shrink(self, new_aabb, voxel_size):
         pass
@@ -406,33 +463,26 @@ class TensorBase(torch.nn.Module):
 
 
     def forward(self, rays_chunk, white_bg=True, is_train=False, ndc_ray=False, N_samples=-1):
-
-        # sample points
-        viewdirs = rays_chunk[:, 3:6]
-        if ndc_ray:
-            xyz_sampled, z_vals, ray_valid = self.sample_ray_ndc(rays_chunk[:, :3], viewdirs, is_train=is_train,N_samples=N_samples)
-            dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
-            rays_norm = torch.norm(viewdirs, dim=-1, keepdim=True)
-            dists = dists * rays_norm
-            viewdirs = viewdirs / rays_norm
-        else:
-            xyz_sampled, z_vals, ray_valid = self.sample_ray(rays_chunk[:, :3], viewdirs, is_train=is_train,N_samples=N_samples)
-            dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
-        viewdirs = viewdirs.view(-1, 1, 3).expand(xyz_sampled.shape)
         
-        if self.alphaMask is not None:
-            alphas = self.alphaMask.sample_alpha(xyz_sampled[ray_valid])
-            alpha_mask = alphas > 0
-            ray_invalid = ~ray_valid
-            ray_invalid[ray_valid] |= (~alpha_mask)
-            ray_valid = ~ray_invalid
+        # sample points: contraction of MipNeRF 360
+        xyz_sampled, z_vals, ray_valid = self.sample_ray_contracted(rays_chunk[:, :3], rays_chunk[:, 3:6], is_train=is_train,N_samples=N_samples)
+        z_vals = torch.tile(z_vals, (xyz_sampled.shape[0], 1))
+        viewdirs = rays_chunk[:, 3:6]
+        dists = torch.cat(
+            (z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])),
+            dim=-1,
+        )
+        viewdirs_norm = torch.norm(viewdirs, dim=-1, keepdim=True)
+        dists = dists * viewdirs_norm
+        viewdirs = viewdirs / viewdirs_norm
+        viewdirs = viewdirs.view(-1, 1, 3).expand(xyz_sampled.shape)
 
+        xyz_sampled = self.normalize_coord(xyz_sampled)
 
         sigma = torch.zeros(xyz_sampled.shape[:-1], device=xyz_sampled.device)
         rgb = torch.zeros((*xyz_sampled.shape[:2], 3), device=xyz_sampled.device)
 
         if ray_valid.any():
-            xyz_sampled = self.normalize_coord(xyz_sampled)
             sigma_feature = self.compute_densityfeature(xyz_sampled[ray_valid])
 
             validsigma = self.feature2density(sigma_feature)

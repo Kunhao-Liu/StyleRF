@@ -28,7 +28,7 @@ def config_parser(cmd=None):
     parser.add_argument("--batch_size", type=int, default=4096)
     parser.add_argument("--n_iters", type=int, default=30000)
     parser.add_argument('--dataset_name', type=str, default='blender',
-                        choices=['blender', 'llff', 'nsvf', 'dtu','tankstemple', 'own_data'])
+                        choices=['blender', 'llff', 'nsvf', 'dtu','tankstemple', 'tnt','own_data'])
 
 
     # training options

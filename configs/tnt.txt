@@ -1,10 +1,10 @@
 
-dataset_name = llff
-datadir = ./data/nerf_llff_data/trex
-expname = trex
+dataset_name = tnt
+datadir = /mnt/sda/Datasets/tanks_temples_nerf++/tanks_and_temples/tat_intermediate_M60
+expname = M60
 basedir = ./log
 
-downsample_train = 4.0
+downsample_train = 1
 ndc_ray = 1
 
 n_iters = 25000
@@ -16,7 +16,7 @@ upsamp_list = [2000,3000,4000,5500]
 update_AlphaMask_list = [2500]
 
 N_vis = -1 # vis all testing images
-vis_every = 10000
+vis_every = 5000
 
 render_test = 1
 render_path = 1

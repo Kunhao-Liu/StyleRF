@@ -186,24 +186,20 @@ class TensorVMSplit(TensorBase):
 
     def render_feature_map(self, rays_chunk, s_mean_std_mat=None, is_train=False, ndc_ray=False, N_samples=-1):
 
-        # sample points
+        # sample points: contraction of MipNeRF 360
+        xyz_sampled, z_vals, ray_valid = self.sample_ray_contracted(rays_chunk[:, :3], rays_chunk[:, 3:6], is_train=is_train,N_samples=N_samples)
+        z_vals = torch.tile(z_vals, (xyz_sampled.shape[0], 1))
         viewdirs = rays_chunk[:, 3:6]
-        if ndc_ray:
-            xyz_sampled, z_vals, ray_valid = self.sample_ray_ndc(rays_chunk[:, :3], viewdirs, is_train=is_train,N_samples=N_samples)
-            dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
-            rays_norm = torch.norm(viewdirs, dim=-1, keepdim=True)
-            dists = dists * rays_norm
-        else:
-            xyz_sampled, z_vals, ray_valid = self.sample_ray(rays_chunk[:, :3], viewdirs, is_train=is_train,N_samples=N_samples)
-            dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
-        
-        if self.alphaMask is not None:
-            alphas = self.alphaMask.sample_alpha(xyz_sampled[ray_valid])
-            alpha_mask = alphas > 0
-            ray_invalid = ~ray_valid
-            ray_invalid[ray_valid] |= (~alpha_mask)
-            ray_valid = ~ray_invalid
+        dists = torch.cat(
+            (z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])),
+            dim=-1,
+        )
+        viewdirs_norm = torch.norm(viewdirs, dim=-1, keepdim=True)
+        dists = dists * viewdirs_norm
+        viewdirs = viewdirs / viewdirs_norm
+        viewdirs = viewdirs.view(-1, 1, 3).expand(xyz_sampled.shape)
 
+        xyz_sampled = self.normalize_coord(xyz_sampled)
 
         sigma = torch.zeros(xyz_sampled.shape[:-1], device=xyz_sampled.device)
         if s_mean_std_mat is not None:
@@ -213,7 +209,6 @@ class TensorVMSplit(TensorBase):
 
 
         if ray_valid.any():
-            xyz_sampled = self.normalize_coord(xyz_sampled)
             sigma_feature = self.compute_densityfeature(xyz_sampled[ray_valid])
 
             validsigma = self.feature2density(sigma_feature)
@@ -246,28 +241,24 @@ class TensorVMSplit(TensorBase):
 
     def render_depth_map(self, rays_chunk, is_train=False, ndc_ray=False, N_samples=-1):
 
-        # sample points
+        # sample points: contraction of MipNeRF 360
+        xyz_sampled, z_vals, ray_valid = self.sample_ray_contracted(rays_chunk[:, :3], rays_chunk[:, 3:6], is_train=is_train,N_samples=N_samples)
+        z_vals = torch.tile(z_vals, (xyz_sampled.shape[0], 1))
         viewdirs = rays_chunk[:, 3:6]
-        if ndc_ray:
-            xyz_sampled, z_vals, ray_valid = self.sample_ray_ndc(rays_chunk[:, :3], viewdirs, is_train=is_train,N_samples=N_samples)
-            dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
-            rays_norm = torch.norm(viewdirs, dim=-1, keepdim=True)
-            dists = dists * rays_norm
-        else:
-            xyz_sampled, z_vals, ray_valid = self.sample_ray(rays_chunk[:, :3], viewdirs, is_train=is_train,N_samples=N_samples)
-            dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
-        
-        if self.alphaMask is not None:
-            alphas = self.alphaMask.sample_alpha(xyz_sampled[ray_valid])
-            alpha_mask = alphas > 0
-            ray_invalid = ~ray_valid
-            ray_invalid[ray_valid] |= (~alpha_mask)
-            ray_valid = ~ray_invalid
+        dists = torch.cat(
+            (z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])),
+            dim=-1,
+        )
+        viewdirs_norm = torch.norm(viewdirs, dim=-1, keepdim=True)
+        dists = dists * viewdirs_norm
+        viewdirs = viewdirs / viewdirs_norm
+        viewdirs = viewdirs.view(-1, 1, 3).expand(xyz_sampled.shape)
+
+        xyz_sampled = self.normalize_coord(xyz_sampled)
 
         sigma = torch.zeros(xyz_sampled.shape[:-1], device=xyz_sampled.device)
 
         if ray_valid.any():
-            xyz_sampled = self.normalize_coord(xyz_sampled)
             sigma_feature = self.compute_densityfeature(xyz_sampled[ray_valid])
             validsigma = self.feature2density(sigma_feature)
             sigma[ray_valid] = validsigma
